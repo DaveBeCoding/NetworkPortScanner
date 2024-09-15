@@ -43,6 +43,30 @@ int main() {
     return 0;
 }
 
+void worker(const std::string& ip) {
+    while (true) {
+        int port;
+
+        // Acquire lock and check for available tasks
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            cv.wait(lock, [] { return !port_queue.empty() || done; });
+
+            if (port_queue.empty()) {
+                if (done) break;
+                else continue;
+            }
+
+            port = port_queue.front();
+            port_queue.pop();
+        }
+
+        // Scan the port outside the lock
+        scanPort(ip, port);
+    }
+}
+
+
 void scanPort(const std::string& ip, int port) {
     int sockfd;
     sockaddr_in addr;
@@ -124,28 +148,6 @@ void scanPort(const std::string& ip, int port) {
     close(sockfd);
 }
 
-void worker(const std::string& ip) {
-    while (true) {
-        int port;
-
-        // Acquire lock and check for available tasks
-        {
-            std::unique_lock<std::mutex> lock(queue_mutex);
-            cv.wait(lock, [] { return !port_queue.empty() || done; });
-
-            if (port_queue.empty()) {
-                if (done) break;
-                else continue;
-            }
-
-            port = port_queue.front();
-            port_queue.pop();
-        }
-
-        // Scan the port outside the lock
-        scanPort(ip, port);
-    }
-}
 
 void scanPortsOnIP(const std::string& ip, int startPort, int endPort, int numThreads) {
     // Populate the task queue and set 'done' to true
