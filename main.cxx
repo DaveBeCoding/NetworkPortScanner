@@ -147,7 +147,7 @@ void scanPortsOnIP(const std::string& ip, int startPort, int endPort, int numThr
     }
 }
 
-int main() {
+int main() { //
     std::string ip;
     int startPort, endPort, numThreads;
 
