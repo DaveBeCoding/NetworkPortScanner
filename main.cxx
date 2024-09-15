@@ -18,6 +18,31 @@ std::condition_variable cv;
 std::queue<int> port_queue;
 bool done = false;
 
+void scanPort(const std::string& ip, int port);
+void worker(const std::string& ip);
+void scanPortsOnIP(const std::string& ip, int startPort, int endPort, int numThreads);
+
+int main() {
+    std::string ip;
+    int startPort, endPort, numThreads;
+
+    std::cout << "Enter IP address to scan: ";
+    std::cin >> ip;
+
+    std::cout << "Enter start port: ";
+    std::cin >> startPort;
+
+    std::cout << "Enter end port: ";
+    std::cin >> endPort;
+
+    std::cout << "Enter number of threads: ";
+    std::cin >> numThreads;
+
+    scanPortsOnIP(ip, startPort, endPort, numThreads);
+
+    return 0;
+}
+
 void scanPort(const std::string& ip, int port) {
     int sockfd;
     sockaddr_in addr;
@@ -147,23 +172,3 @@ void scanPortsOnIP(const std::string& ip, int startPort, int endPort, int numThr
     }
 }
 
-int main() { //
-    std::string ip;
-    int startPort, endPort, numThreads;
-
-    std::cout << "Enter IP address to scan: ";
-    std::cin >> ip;
-
-    std::cout << "Enter start port: ";
-    std::cin >> startPort;
-
-    std::cout << "Enter end port: ";
-    std::cin >> endPort;
-
-    std::cout << "Enter number of threads: ";
-    std::cin >> numThreads;
-
-    scanPortsOnIP(ip, startPort, endPort, numThreads);
-
-    return 0;
-}
