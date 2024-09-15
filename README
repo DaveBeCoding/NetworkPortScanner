@@ -1,1 +1,199 @@
+#### Multi-threaded Port Scanner in C++
+
+
+Introduction
+
+This project is a multi-threaded port scanner written in C++. It demonstrates several advanced programming concepts relevant to embedded systems, network engineering, and cybersecurity engineering. The application efficiently scans a range of ports on a specified IP address, identifying open ports and attempting to retrieve any available service banners.
+
+Overview
+
+The application performs the following functions:
+
+User Input: Accepts target IP address, start port, end port, and number of threads from the user.
+Multi-threading: Utilizes multiple threads to scan ports concurrently for improved efficiency.
+Non-blocking Sockets: Implements non-blocking socket connections to reduce wait times during network operations.
+Synchronization: Manages shared resources safely using mutexes and condition variables.
+Banner Grabbing: Attempts to read any available data (banners) from open ports, which can provide additional information about the running services.
+Key Concepts and Features
+
+1. - Multithreading and Concurrency
+Thread Creation and Management: Uses the <thread> library to create multiple threads (std::thread) that execute the worker function concurrently.
+Thread Pooling: Efficiently reuses threads to handle multiple tasks without the overhead of creating and destroying threads repeatedly.
+Concurrency Control: Distributes port scanning tasks among multiple threads to achieve faster scanning times and better resource utilization.
+2. - Synchronization Primitives
+Mutexes (std::mutex): Protects shared resources like the console output (cout_mutex) and the port queue (queue_mutex) to prevent race conditions.
+Condition Variables (std::condition_variable): Coordinates the execution of threads by notifying worker threads when new tasks are available in the queue (cv).
+Lock Guards and Unique Locks: Uses std::lock_guard and std::unique_lock to ensure that mutexes are properly locked and unlocked.
+3. - Networking and Socket Programming
+Socket Creation: Uses the socket() system call to create TCP sockets for communication.
+Address Structures: Configures the sockaddr_in structure with the target IP and port, using inet_pton() for IP address conversion.
+Non-blocking Connections: Sets sockets to non-blocking mode with fcntl() to avoid blocking the thread during connection attempts.
+Connection Attempts: Uses connect() to attempt TCP connections to target ports.
+I/O Multiplexing with select(): Monitors socket file descriptors to check the status of non-blocking connections and to detect readable data.
+4. - Non-blocking I/O and Event-driven Programming
+Non-blocking Sockets: Setting sockets to non-blocking mode prevents threads from stalling if a connection isn't immediately available.
+Event-driven Behavior: Utilizes select() to wait for events (socket readiness for writing or reading) rather than blocking or continuously polling.
+5. - Port Scanning Techniques
+Efficient Scanning: Simulates aspects of SYN scanning by attempting non-blocking connections, which is faster and more stealthy than full connection attempts.
+Banner Grabbing: After successfully connecting, the program attempts to read any data sent by the service, potentially revealing service versions or other information.
+6. - System Calls and Low-level API Usage
+fcntl(): Manipulates file descriptor flags to set sockets to non-blocking mode.
+select(): Monitors multiple file descriptors to determine their readiness for I/O operations.
+getsockopt(): Checks the socket for errors after a non-blocking connect attempt.
+Error Handling: Checks return values of system calls and uses errno to handle errors appropriately.
+7. - Resource Management
+Socket Management: Ensures that sockets are properly closed after use to prevent resource leaks.
+Thread Lifecycle: Joins all threads before program termination to ensure a graceful shutdown.
+8. - Cross-platform Considerations
+POSIX Compliance: Uses POSIX-compliant system calls, making the code portable across UNIX-like systems.
+Code Structure
+
+The code is organized into several key functions:
+
+- main(): Handles user input and initiates the port scanning process.
+- scanPortsOnIP(): Prepares the task queue and starts worker threads.
+- worker(): Consumes ports from the queue and invokes scanPort() for each port.
+- scanPort(): Attempts to connect to a given port and reads any available banner data.
+#### Detailed Explanation
+
+main()
+```cpp
+int main() {
+    std::string ip;
+    int startPort, endPort, numThreads;
+
+    std::cout << "Enter IP address to scan: ";
+    std::cin >> ip;
+
+    std::cout << "Enter start port: ";
+    std::cin >> startPort;
+
+    std::cout << "Enter end port: ";
+    std::cin >> endPort;
+
+    std::cout << "Enter number of threads: ";
+    std::cin >> numThreads;
+
+    scanPortsOnIP(ip, startPort, endPort, numThreads);
+
+    return 0;
+}
+```
+- Functionality: Collects input from the user and initiates the scanning process.
+
+- User Input: Accepts the target IP address, port range, and the number of threads to use.
+
+#### scanPortsOnIP()
+
+```c++
+void scanPortsOnIP(const std::string& ip, int startPort, int endPort, int numThreads) {
+    // Populate the task queue and set 'done' to true
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        for (int port = startPort; port <= endPort; ++port) {
+            port_queue.push(port);
+        }
+        done = true;
+    }
+
+    // Notify workers that tasks are available
+    cv.notify_all();
+
+    // Create worker threads
+    std::vector<std::thread> threads;
+    for (int i = 0; i < numThreads; ++i) {
+        threads.emplace_back(worker, ip);
+    }
+
+    // Join threads
+    for (auto& th : threads) {
+        th.join();
+    }
+}
+```
+
+- Task Queue Preparation: Fills the port_queue with the range of ports to scan.
+- Thread Creation: Spawns worker threads to perform port scanning concurrently.
+- Synchronization: Uses cv.notify_all() to wake up worker threads waiting for tasks.
+
+#### worker()
+
+```c++
+void worker(const std::string& ip) {
+    while (true) {
+        int port;
+
+        // Acquire lock and check for available tasks
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            cv.wait(lock, [] { return !port_queue.empty() || done; });
+
+            if (port_queue.empty()) {
+                if (done) break;
+                else continue;
+            }
+
+            port = port_queue.front();
+            port_queue.pop();
+        }
+
+        // Scan the port outside the lock
+        scanPort(ip, port);
+    }
+}
+```
+
+- Task Consumption: Retrieves ports from the port_queue for scanning.
+- Thread Synchronization: Uses std::unique_lock and cv.wait() to wait for available tasks.
+- Exit Condition: Breaks out of the loop when all tasks are completed (done flag is true).
+
+#### scanPort()
+
+```c++
+void scanPort(const std::string& ip, int port) {
+    // [Socket creation and setup code]
+
+    // Set socket to non-blocking
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);
+
+    // Try to connect
+    int result = connect(sockfd, (sockaddr*)&addr, sizeof(addr));
+
+    // Check if connection is in progress or already connected
+    if (result < 0 && errno != EINPROGRESS) {
+        // Connection failed immediately
+        close(sockfd);
+        return;
+    }
+
+    // Use select to wait for the socket to become writable (connected) or for an error
+    fd_set wfds;
+    struct timeval tv;
+    FD_ZERO(&wfds);
+    FD_SET(sockfd, &wfds);
+    tv.tv_sec = 1;  // 1-second timeout
+    tv.tv_usec = 0;
+
+    result = select(sockfd + 1, NULL, &wfds, NULL, &tv);
+
+    if (result > 0 && FD_ISSET(sockfd, &wfds)) {
+        // Check for socket errors
+        int error = 0;
+        socklen_t len = sizeof(error);
+        getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
+
+        if (error == 0) {
+            // Connection successful
+            // [Banner grabbing code]
+        }
+    }
+
+    // Close the socket
+    close(sockfd);
+}
+
+```
+- Non-blocking Connection Attempt: Initiates a connection without blocking the thread.
+- Connection Status Check: Uses select() and getsockopt() to determine if the connection was successful.
+- Banner Grabbing: If connected, attempts to read any available data from the socket.
 
