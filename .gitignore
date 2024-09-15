@@ -1,0 +1,132 @@
+# Compiled object files
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.lai
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.a
+*.lib
+
+# Executables
+a.out
+*.exe
+*.EXE
+*.out
+
+# Debug files
+*.dSYM/
+*.stackdump
+
+# files
+notes
+
+# Build directories
+build/
+bin/
+lib/
+out/
+Debug/
+Release/
+notes/
+
+# Temporary files
+*.tmp
+*~
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# IDE specific files
+.vscode/
+.idea/
+*.code-workspace
+
+# Visual Studio files
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.sdf
+*.opensdf
+*.vcxproj.*
+.ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.suo
+
+# Mac specific files
+.DS_Store
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+install_manifest.txt
+compile_commands.json
+
+# Other system files
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# CodeBlocks files
+*.depend
+*.layout
+
+# Qt Creator files
+*.pro.user
+*.qbs.user
+*.moc/
+*.obj/
+*.rcc/
+*.ui~
+
+# Clang format
+.clang-format
+
+# Coverage files
+*.gcda
+*.gcno
+*.gcov
+
+# Code analysis reports
+report.html
+coverage/
+
+# Core dumps
+core
+
+# GDB files
+gdb.txt
+
+# Sublime Text files
+*.sublime-project
+*.sublime-workspace
+
+# Linux perf data
+perf.data
+
+# Temporary backup files
+*.bak
+
+# Lock files
+*.lock
+
