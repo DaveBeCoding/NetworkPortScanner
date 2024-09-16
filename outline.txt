@@ -1,0 +1,6 @@
+/NetworkPortScanner
+│
+├── port_scanner.cpp  # Original file scanning ports and storing data in SQLite
+├── port_statistics.cpp  # New file for running statistics on the collected data
+├── ml_analysis.py   # Optional Python script for ML analysis (if required)
+└── Makefile or a build script (optional)
